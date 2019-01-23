@@ -20,6 +20,12 @@ var/
 .installed.cfg
 *.egg
 
+# Virtualenv
+SC2-AI/
+
+# SC2 workspace files
+.idea/
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
