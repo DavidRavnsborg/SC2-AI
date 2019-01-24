@@ -30,14 +30,14 @@ class SentdeBot(sc2.BotAI):
                 await self.do(nexus.train(PROBE))
                 
     async def build_pylons(self):
-        if self.supply_left < 5 and not self.already_pending(PYLON):
+        if self.supply_left < 6 and not self.already_pending(PYLON):
             nexuses = self.units(NEXUS).ready
             if nexuses.exists:
                 if self.can_afford(PYLON):
                     await self.build(PYLON, near=nexuses.first)
    
     async def expand(self):
-        if self.units(NEXUS).amount < min(12, 0.5*self.getMinitues()) and self.can_afford(NEXUS):
+        if self.units(NEXUS).amount < min(8, 0.5*self.getMinitues()) and self.can_afford(NEXUS):
             await self.expand_now()
             
     async def build_assimilator(self):
@@ -60,27 +60,27 @@ class SentdeBot(sc2.BotAI):
                 if self.can_afford(CYBERNETICSCORE) and not self.already_pending(CYBERNETICSCORE):
                     await self.build(CYBERNETICSCORE, near=pylon)
 
-            elif len(self.units(GATEWAY)) < (self.getMinitues()/16):
+            elif len(self.units(GATEWAY)) < (self.getMinitues()/10):
                 if self.can_afford(GATEWAY) and not self.already_pending(GATEWAY):
                     await self.build(GATEWAY, near=pylon)
                     
-            if self.units(FLEETBEACON).ready.exists:
-                if self.can_afford(FORGE) and len(self.units(FORGE)) == 0:
-                    await self.build(FORGE, near=pylon)
+#            if self.units(FLEETBEACON).ready.exists:
+#                if self.can_afford(FORGE) and len(self.units(FORGE)) == 0:
+#                    await self.build(FORGE, near=pylon)
 
             if self.units(STARGATE).ready.exists:
                     if self.can_afford(FLEETBEACON) and not self.already_pending(FLEETBEACON) and len(self.units (FLEETBEACON))== 0:
                         await self.build(FLEETBEACON, near=pylon)
                         
             if self.units(CYBERNETICSCORE).ready.exists:
-                if self.can_afford(STARGATE) and not self.already_pending(STARGATE)and len(self.units (NEXUS)):
+                if self.can_afford(STARGATE) and not self.already_pending(STARGATE)and len(self.units (NEXUS))  +0:
                         await self.build(STARGATE, near=pylon)
-
+#
 #            if self.units(CYBERNETICSCORE).ready.exists:
-#                if len(self.units(STARGATE)) < (self.getMinitues()/3):
-#                    if self.can_afford(STARGATE) and not self.already_pending(STARGATE):
-#                        await self.build(STARGATE, near=pylon)
-#             
+##                if len(self.units(STARGATE)) < (self.getMinitues()/3):
+##                    if self.can_afford(STARGATE) and not self.already_pending(STARGATE):
+##                        await self.build(STARGATE, near=pylon)
+##             
 #                
 #                if self.can_afford(TWILIGHTCOUNCIL) and not self.already_pending(TWILIGHTCOUNCIL)and len(self.units (TWILIGHTCOUNCIL))== 0:
 #                    await self.build(TWILIGHTCOUNCIL, near=pylon)
@@ -93,7 +93,7 @@ class SentdeBot(sc2.BotAI):
                        await self.do(lab(RESEARCH_WARPGATE))
                           
 #                for lab in self.units(FORGE).ready:
-                if self.units(FORGE).amount > min(1, 0.5/self.getMinitues()) and self.can_afford(PROTOSSSHIELDSLEVEL1):
+                for lab in self.units(CYBERNETICSCORE).ready:
                     abilities = await self.get_available_abilities(lab)
                     if FORGERESEARCH_PROTOSSSHIELDSLEVEL1 in abilities and \
                        self.can_afford(FORGERESEARCH_PROTOSSSHIELDSLEVEL1):
@@ -106,8 +106,8 @@ class SentdeBot(sc2.BotAI):
 #                            await self.do(building(WARPGATERESEARCH))
                 
 #                
-#                if self.can_afford(TEMPLARARCHIVE) and not self.already_pending(TEMPLARARCHIVE)and len(self.units (TEMPLARARCHIVE))== 0:
-#                    await self.build(TEMPLARARCHIVE, near=pylon)
+                if self.can_afford(TEMPLARARCHIVE) and not self.already_pending(TEMPLARARCHIVE)and len(self.units (TEMPLARARCHIVE))== 0:
+                    await self.build(TEMPLARARCHIVE, near=pylon)
 #                
 #                if self.units(CYBERNETICSCORE).ready.exists:
 #                    if self.can_afford(WARPGATERESEARCH) and not self.already_pending(WARPGATERESEARCH) :
@@ -127,7 +127,7 @@ class SentdeBot(sc2.BotAI):
     
     async def build_offensive_force(self):
         for gw in self.units(GATEWAY).ready.noqueue:
-            if not self.units(ZEALOT).amount  > self.units(STALKER).amount  > self.units(CARRIER).amount and not self.units(STALKER).amount  > self.units(IMMORTAL).amount> self.units(CARRIER).amount: 
+            if not self.units(ZEALOT).amount  > self.units(STALKER).amount  > self.units(TEMPEST).amount and not self.units(STALKER).amount  > self.units(IMMORTAL).amount> self.units(CARRIER).amount: 
 
                 if self.can_afford(STALKER) and self.supply_left > 0:
                     await self.do(gw.train(STALKER))
@@ -139,8 +139,9 @@ class SentdeBot(sc2.BotAI):
 #                    await self.do(gw.train(ZEALOT))
 
         for sg in self.units(STARGATE).ready.noqueue:
-            if self.can_afford(CARRIER) and self.supply_left > 0:
-                await self.do(sg.train(CARRIER))
+            if len(self.units(CARRIER)) < (self.getMinitues()*3.5):
+                if self.can_afford(CARRIER) and self.supply_left > 0:
+                    await self.do(sg.train(CARRIER))
                 
 #        for sg in self.units(STARGATE).ready.noqueue:
 #            if self.can_afford(TEMPEST) and self.supply_left > 0:
