@@ -8,12 +8,10 @@ import cv2
 import numpy as np
 import time
 
-#os.environ["SC2PATH"] = '/starcraftstuff/StarCraftII/'
-
 HEADLESS = False
 
 
-class SentdeBot(sc2.BotAI):
+class SentdeBotDL(sc2.BotAI):
     def __init__(self):
         self.ITERATIONS_PER_MINUTE = 165
         self.MAX_WORKERS = 50
@@ -255,7 +253,8 @@ class SentdeBot(sc2.BotAI):
                 print(y)
                 self.train_data.append([y,self.flipped])
 
-run_game(maps.get("(2)LostandFoundLE"), [
-    Bot(Race.Protoss, SentdeBot()),
-    Computer(Race.Terran, Difficulty.Easy)
-    ], realtime=False)
+if __name__ == "__main__":
+    run_game(maps.get("(2)LostandFoundLE"), [
+        Bot(Race.Protoss, SentdeBot()),
+        Computer(Race.Terran, Difficulty.Easy)
+        ], realtime=False)
