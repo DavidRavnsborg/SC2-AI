@@ -196,18 +196,17 @@ class SentdeBot(sc2.BotAI):
         '''
         Helper method for researching a tech at a specific building.
         '''
-        self.chat_send("WROONG")
-        for lab in self.units(building).ready:
-            self.chat_send("Inside ready.exist")
+        for lab in self.units(building).ready.noqueue:
+            # if lab.ready:
             abilities = await self.get_available_abilities(lab)
             if tech in abilities and self.can_afford(tech):
-                self.chat_send("Inside can_afford")                
+                await self.chat_send("Upgrading ability {0}".format(tech.name))
                 await self.do(lab(tech))
     
     async def research(self):
-        self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1)
-        self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL2)
-        self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL3)
+        await self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1)
+        await self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL2)
+        await self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL3)
     
     
     
