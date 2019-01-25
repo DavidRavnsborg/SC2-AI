@@ -37,7 +37,7 @@ class SentdeBot(sc2.BotAI):
                     await self.build(PYLON, near=nexuses.first)
    
     async def expand(self):
-        if self.units(NEXUS).amount < min(12, 0.5*self.getMinitues()) and self.can_afford(NEXUS):
+        if self.units(NEXUS).amount < min(14, 0.7*self.getMinitues()) and self.can_afford(NEXUS):
             await self.expand_now()
             
     async def build_assimilator(self):

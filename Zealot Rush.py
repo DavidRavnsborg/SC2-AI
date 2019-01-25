@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jan 24 19:24:30 2019
+
+@author: Bitcoin
+"""
+
 import sc2
 from sc2 import run_game, maps, Race, Difficulty
 from sc2.player import Bot, Computer
@@ -10,9 +17,9 @@ mapname = "(2)LostandFoundLE"
 class SentdeBot(sc2.BotAI):
     def __init__(self):
         self.ITERATIONS_PER_MINUTE = 165
-        self.MAX_WORKERS = 45
-        self.MAX_STALKERS = 4
-        self.MAX_ZEALOTS = 4
+        self.MAX_WORKERS = 70
+        self.MAX_STALKERS = 40
+        self.MAX_ZEALOTS = 100
 
     async def on_step(self, iteration):# what to do every step
          self.iteration = iteration   
@@ -42,7 +49,7 @@ class SentdeBot(sc2.BotAI):
                     await self.build(PYLON, near=nexuses.first)
    
     async def expand(self):
-        if self.units(NEXUS).amount < min(14, 0.6*self.getMinitues()) and self.can_afford(NEXUS):
+        if self.units(NEXUS).amount < min(12, 0.5*self.getMinitues()) and self.can_afford(NEXUS):
             await self.expand_now()
             
     async def build_assimilator(self):
@@ -65,7 +72,7 @@ class SentdeBot(sc2.BotAI):
                 if self.can_afford(CYBERNETICSCORE) and not self.already_pending(CYBERNETICSCORE):
                     await self.build(CYBERNETICSCORE, near=pylon)
 
-            elif len(self.units(GATEWAY)) < (self.getMinitues()/4):
+            elif len(self.units(GATEWAY)) < (self.getMinitues()/2):
                 if self.can_afford(GATEWAY) and not self.already_pending(GATEWAY):
                     await self.build(GATEWAY, near=pylon)
                     
@@ -108,11 +115,11 @@ class SentdeBot(sc2.BotAI):
                     await self.build(TWILIGHTCOUNCIL, near=pylon)
                                 
                                 
-#                for lab in self.units(CYBERNETICSCORE).ready:
-#                    abilities = await self.get_available_abilities(lab)
-#                    if RESEARCH_WARPGATE in abilities and \
-#                       self.can_afford(RESEARCH_WARPGATE):
-#                       await self.do(lab(RESEARCH_WARPGATE))
+                for lab in self.units(CYBERNETICSCORE).ready:
+                    abilities = await self.get_available_abilities(lab)
+                    if RESEARCH_WARPGATE in abilities and \
+                       self.can_afford(RESEARCH_WARPGATE):
+                       await self.do(lab(RESEARCH_WARPGATE))
 
 # DELETE THIS IS RESEARCH WORKS               
 #                if self.units(CYBERNETICSCORE).ready.exists:
@@ -120,14 +127,14 @@ class SentdeBot(sc2.BotAI):
 #                    if CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1 in abilities and \
 #                       self.can_afford(CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1):
 #                       await self.do(lab(CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1))
-            if self.units(CARRIER).ready.exists:          
+            if self.units(CYBERNETICSCORE).ready.exists:          
                 for lab in self.units(CYBERNETICSCORE).ready.noqueue:
                     abilities = await self.get_available_abilities(lab)
                     for ability in abilities:
                         if self.can_afford(lab(ability)):
                             await self.do(lab(ability))
             
-            if self.units(FLEETBEACON).ready.exists:
+            if self.units(FORGE).ready.exists:
                 for lab in self.units(FORGE).ready.noqueue:
                     abilities = await self.get_available_abilities(lab)
                     for ability in abilities:
@@ -140,12 +147,12 @@ class SentdeBot(sc2.BotAI):
                 if PROTOSSSHIELDSLEVEL1 in abilities:
                     if self.can_afford(PROTOSSSHIELDSLEVEL1) and building.noqueue:
                         await self.do(building(PROTOSSSHIELDSLEVEL1))           
-#                if self.units(CYBERNETICSCORE).ready.exists:
-#                    building = self.units(CYBERNETICSCORE).ready.first
-#                    abilities = await self.get_available_abilities(building)
-#                    if WARPGATE in abilities:
-#                        if self.can_afford(WARPGATERESEARCH) and building.noqueue:
-#                            await self.do(building(WARPGATERESEARCH))
+                if self.units(CYBERNETICSCORE).ready.exists:
+                    building = self.units(CYBERNETICSCORE).ready.first
+                    abilities = await self.get_available_abilities(building)
+                    if WARPGATE in abilities:
+                        if self.can_afford(WARPGATERESEARCH) and building.noqueue:
+                            await self.do(building(WARPGATERESEARCH))
                 
 #                
 #                if self.can_afford(TEMPLARARCHIVE) and not self.already_pending(TEMPLARARCHIVE)and len(self.units (TEMPLARARCHIVE))== 0:
@@ -155,16 +162,16 @@ class SentdeBot(sc2.BotAI):
 #                    if self.can_afford(WARPGATERESEARCH) and not self.already_pending(WARPGATERESEARCH) :
 #                        await self.build(WARPGATERESEARCH)
 #                        
-#                if self.units(TEMPLARARCHIVE).ready.exists:
-#                    if self.can_afford(PSISTORMTECH) and not self.already_pending(PSISTORMTECH) :
-#                        await self.build(PSISTORMTECH)
+                if self.units(TEMPLARARCHIVE).ready.exists:
+                    if self.can_afford(CHARGE) and not self.already_pending(CHARGE) :
+                        await self.build(CHARGE)
 #                        
           
                
 #                #test for robo facility v#
-#            elif len(self.units(ROBOTICSFACILITY)) < (self.getMinitues()/5):
-#                    if self.can_afford(ROBOTICSFACILITY) and not self.already_pending(ROBOTICSFACILITY):
-#                        await self.build(ROBOTICSFACILITY, near=pylon)
+            elif len(self.units(ROBOTICSFACILITY)) < (self.getMinitues()/5):
+                    if self.can_afford(ROBOTICSFACILITY) and not self.already_pending(ROBOTICSFACILITY):
+                        await self.build(ROBOTICSFACILITY, near=pylon)
 #    #test for robo facility ^
     """
     Offensive Force Section
@@ -182,8 +189,11 @@ class SentdeBot(sc2.BotAI):
                 
                  
                     
-#                if self.can_afford(ADEPT) and self.supply_left > 0:
-#                    await self.do(gw.train(ADEPT))
+                if self.can_afford(ADEPT) and self.supply_left > 0:
+                    await self.do(gw.train(ADEPT))
+                
+                if self.can_afford(SENTRY) and self.supply_left > 0:
+                    await self.do(gw.train(SENTRY))
                     
 #                if self.can_afford(ZEALOT) and self.supply_left > 0:
 #                    await self.do(gw.train(ZEALOT))
@@ -197,10 +207,10 @@ class SentdeBot(sc2.BotAI):
 #                if self.can_afford(CARRIER) and self.supply_left > 0:
 #                    await self.do(sg.train(CARRIER))
          
-        for sg in self.units(STARGATE).ready.noqueue:
-            if len(self.units(TEMPEST)) < (self.getMinitues()*0.25):
-                if self.can_afford(TEMPEST) and self.supply_left > 0:
-                    await self.do(sg.train(TEMPEST))
+#        for sg in self.units(STARGATE).ready.noqueue:
+#            if len(self.units(TEMPEST)) < (self.getMinitues()*0.25):
+#                if self.can_afford(TEMPEST) and self.supply_left > 0:
+#                    await self.do(sg.train(TEMPEST))
         
         
         for sg in self.units(STARGATE).ready.noqueue:
@@ -275,7 +285,7 @@ class SentdeBot(sc2.BotAI):
 #                if len(self.known_enemy_units) > 0:
 #                    for s in self.units(UNIT).idle:
 #                        await self.do(s.attack(random.choice(self.known_enemy_units)))
-        unit_balance = { "Attack": 100, "Defend": 100}
+        unit_balance = { "Attack": 20, "Defend": 1}
 
         fighter_units = self.units.__sub__(self.units(PROBE)).not_structure()
 

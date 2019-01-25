@@ -64,9 +64,9 @@ class SentdeBot(sc2.BotAI):
                 if self.can_afford(GATEWAY) and not self.already_pending(GATEWAY):
                     await self.build(GATEWAY, near=pylon)
                     
-#            if self.units(FLEETBEACON).ready.exists:
-#                if self.can_afford(FORGE) and len(self.units(FORGE)) == 0:
-#                    await self.build(FORGE, near=pylon)
+            if self.units(FLEETBEACON).ready.exists:
+                if self.can_afford(FORGE) and len(self.units(FORGE)) == 0:
+                    await self.build(FORGE, near=pylon)
 
             if self.units(STARGATE).ready.exists:
                     if self.can_afford(FLEETBEACON) and not self.already_pending(FLEETBEACON) and len(self.units (FLEETBEACON))== 0:
@@ -82,8 +82,8 @@ class SentdeBot(sc2.BotAI):
 ##                        await self.build(STARGATE, near=pylon)
 ##             
 #                
-#                if self.can_afford(TWILIGHTCOUNCIL) and not self.already_pending(TWILIGHTCOUNCIL)and len(self.units (TWILIGHTCOUNCIL))== 0:
-#                    await self.build(TWILIGHTCOUNCIL, near=pylon)
+                if self.can_afford(TWILIGHTCOUNCIL) and not self.already_pending(TWILIGHTCOUNCIL)and len(self.units (TWILIGHTCOUNCIL))== 0:
+                    await self.build(TWILIGHTCOUNCIL, near=pylon)
                                 
                                 
                 for lab in self.units(CYBERNETICSCORE).ready:
@@ -104,7 +104,19 @@ class SentdeBot(sc2.BotAI):
 #                    if WARPGATE in abilities:
 #                        if self.can_afford(WARPGATERESEARCH) and building.noqueue:
 #                            await self.do(building(WARPGATERESEARCH))
-                
+                if self.units(CARRIER).ready.exists:          
+                    for lab in self.units(CYBERNETICSCORE).ready.noqueue:
+                        abilities = await self.get_available_abilities(lab)
+                        for ability in abilities:
+                            if self.can_afford(lab(ability)):
+                                await self.do(lab(ability))
+            
+            if self.units(STALKER).ready.exists:
+                for lab in self.units(FORGE).ready.noqueue:
+                    abilities = await self.get_available_abilities(lab)
+                    for ability in abilities:
+                        if self.can_afford(lab(ability)):
+                            await self.do(lab(ability))
 #                
                 if self.can_afford(TEMPLARARCHIVE) and not self.already_pending(TEMPLARARCHIVE)and len(self.units (TEMPLARARCHIVE))== 0:
                     await self.build(TEMPLARARCHIVE, near=pylon)
@@ -120,9 +132,9 @@ class SentdeBot(sc2.BotAI):
           
                
 #                #test for robo facility v#
-#            elif len(self.units(ROBOTICSFACILITY)) < (self.getMinitues()/5):
-#                    if self.can_afford(ROBOTICSFACILITY) and not self.already_pending(ROBOTICSFACILITY):
-#                        await self.build(ROBOTICSFACILITY, near=pylon)
+            elif len(self.units(ROBOTICSFACILITY)) < (self.getMinitues()/5):
+                    if self.can_afford(ROBOTICSFACILITY) and not self.already_pending(ROBOTICSFACILITY):
+                        await self.build(ROBOTICSFACILITY, near=pylon)
 #    #test for robo facility ^
     
     async def build_offensive_force(self):
@@ -197,7 +209,7 @@ class SentdeBot(sc2.BotAI):
 #                if len(self.known_enemy_units) > 0:
 #                    for s in self.units(UNIT).idle:
 #                        await self.do(s.attack(random.choice(self.known_enemy_units)))
-        unit_balance = { "Attack": 130, "Defend": 0}
+        unit_balance = { "Attack": 35, "Defend": 0}
 
         fighter_units = self.units.__sub__(self.units(PROBE)).not_structure()
 
