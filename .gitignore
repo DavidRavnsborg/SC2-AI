@@ -26,6 +26,9 @@ SC2-AI/
 # SC2 workspace files
 .idea/
 
+# Training data
+train_data/
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
