@@ -2,13 +2,15 @@ import sc2
 from sc2 import run_game, maps, Race, Difficulty
 from sc2.player import Bot, Computer
 from sc2.constants import *
+import random
+
 mapname = "(2)LostandFoundLE"
 #mapname = input ()
 
 class SentdeBot(sc2.BotAI):
     def __init__(self):
         self.ITERATIONS_PER_MINUTE = 165
-        self.MAX_WORKERS = 50
+        self.MAX_WORKERS = 70
 
     async def on_step(self, iteration):# what to do every step
          self.iteration = iteration   
@@ -17,27 +19,28 @@ class SentdeBot(sc2.BotAI):
          await self.build_pylons()  # pylons are protoss supply buildings
          await self.expand()   # expand to a new resource area.
          await self.build_assimilator()  # getting gas
+#         await self.research()
          await self.offensive_force_buildings()
          await self.build_offensive_force()
          await self.build_defense()
          await self.attack()
         
     async def build_workers(self):
-#         nexus = command center
+        # nexus = command center
        if (len(self.units(NEXUS)) * 16) > len(self.units(PROBE)) and len(self.units(PROBE)) < self.MAX_WORKERS:
         for nexus in self.units(NEXUS).ready.noqueue:
             if self.can_afford(PROBE):
                 await self.do(nexus.train(PROBE))
                 
     async def build_pylons(self):
-        if self.supply_left < 5 and not self.already_pending(PYLON):
+        if self.supply_left < 7 and not self.already_pending(PYLON):
             nexuses = self.units(NEXUS).ready
             if nexuses.exists:
                 if self.can_afford(PYLON):
                     await self.build(PYLON, near=nexuses.first)
    
     async def expand(self):
-        if self.units(NEXUS).amount < min(14, 0.7*self.getMinitues()) and self.can_afford(NEXUS):
+        if self.units(NEXUS).amount < min(12, 0.5*self.getMinitues()) and self.can_afford(NEXUS):
             await self.expand_now()
             
     async def build_assimilator(self):
@@ -51,20 +54,20 @@ class SentdeBot(sc2.BotAI):
                     break
                 if not self.units(ASSIMILATOR).closer_than(1.0, vaspene).exists:
                     await self.do(worker.build(ASSIMILATOR, vaspene))
-   
+    
     async def offensive_force_buildings(self):
-        if self.units(PYLON).ready.exists: 
+        if self.units(PYLON).ready.exists:
             pylon = self.units(PYLON).ready.random
 
             if self.units(GATEWAY).ready.exists and not self.units(CYBERNETICSCORE):
                 if self.can_afford(CYBERNETICSCORE) and not self.already_pending(CYBERNETICSCORE):
                     await self.build(CYBERNETICSCORE, near=pylon)
 
-            elif len(self.units(GATEWAY)) < (self.getMinitues()/16):
+            elif len(self.units(GATEWAY)) < (self.getMinitues()/20):
                 if self.can_afford(GATEWAY) and not self.already_pending(GATEWAY):
                     await self.build(GATEWAY, near=pylon)
                     
-            if self.units(FLEETBEACON).ready.exists:
+            if self.units(CYBERNETICSCORE).ready.exists:
                 if self.can_afford(FORGE) and len(self.units(FORGE)) == 0:
                     await self.build(FORGE, near=pylon)
 
@@ -73,31 +76,58 @@ class SentdeBot(sc2.BotAI):
                         await self.build(FLEETBEACON, near=pylon)
                         
             if self.units(CYBERNETICSCORE).ready.exists:
-                if self.can_afford(STARGATE) and not self.already_pending(STARGATE)and len(self.units (NEXUS)):
+                if self.can_afford(STARGATE) and not self.already_pending(STARGATE)and len(self.units (NEXUS))  > len(self.units (STARGATE))/3 :
+                    if not len(self.units(STARGATE )) >=4: 
                         await self.build(STARGATE, near=pylon)
-
+#
 #            if self.units(CYBERNETICSCORE).ready.exists:
-#                if len(self.units(STARGATE)) < (self.getMinitues()/3):
-#                    if self.can_afford(STARGATE) and not self.already_pending(STARGATE):
-#                        await self.build(STARGATE, near=pylon)
-#             
-#                
-#                if self.can_afford(TWILIGHTCOUNCIL) and not self.already_pending(TWILIGHTCOUNCIL)and len(self.units (TWILIGHTCOUNCIL))== 0:
-#                    await self.build(TWILIGHTCOUNCIL, near=pylon)
+##                if len(self.units(STARGATE)) < (self.getMinitues()/3):
+##                    if self.can_afford(STARGATE) and not self.already_pending(STARGATE):
+##                        await self.build(STARGATE, near=pylon)
+                        
+            if self.units(FORGE).ready.exists:
+                building = self.units(FORGE).ready.first
+                abilities = await self.get_available_abilities(building)
+                if PROTOSSSHIELDSLEVEL1 in abilities:
+                    if self.can_afford(UPGRADE_PROTOSSSHIELDSLEVEL1) and building.noqueue:
+                        await self.do(building(UPGRADE_PROTOSSSHIELDSLEVEL1))
+##             
+            if self.units(FLEETBEACON).ready.exists:  
+                if self.can_afford(TWILIGHTCOUNCIL) and not self.already_pending(TWILIGHTCOUNCIL)and len(self.units (TWILIGHTCOUNCIL))== 0:
+                    await self.build(TWILIGHTCOUNCIL, near=pylon)
                                 
                                 
-                for lab in self.units(CYBERNETICSCORE).ready:
-                    abilities = await self.get_available_abilities(lab)
-                    if RESEARCH_WARPGATE in abilities and \
-                       self.can_afford(RESEARCH_WARPGATE):
-                       await self.do(lab(RESEARCH_WARPGATE))
-                          
-#                for lab in self.units(FORGE).ready:
-                if self.units(FORGE).amount > min(1, 0.5/self.getMinitues()) and self.can_afford(PROTOSSSHIELDSLEVEL1):
-                    abilities = await self.get_available_abilities(lab)
-                    if FORGERESEARCH_PROTOSSSHIELDSLEVEL1 in abilities and \
-                       self.can_afford(FORGERESEARCH_PROTOSSSHIELDSLEVEL1):
-                       await self.do(lab(FORGERESEARCH_PROTOSSSHIELDSLEVEL1)) 
+#                for lab in self.units(CYBERNETICSCORE).ready:
+#                    abilities = await self.get_available_abilities(lab)
+#                    if RESEARCH_WARPGATE in abilities and \
+#                       self.can_afford(RESEARCH_WARPGATE):
+#                       await self.do(lab(RESEARCH_WARPGATE))
+
+# DELETE THIS IS RESEARCH WORKS               
+#                if self.units(CYBERNETICSCORE).ready.exists:
+#                    abilities = await self.get_available_abilities(lab)
+#                    if CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1 in abilities and \
+#                       self.can_afford(CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1):
+#                       await self.do(lab(CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1))
+                       
+            for lab in self.units(CYBERNETICSCORE).ready.noqueue:
+                abilities = await self.get_available_abilities(lab)
+                for ability in abilities:
+                    if self.can_afford(lab(ability)):
+                        await self.do(lab(ability))
+            
+            for lab in self.units(FORGE).ready.noqueue:
+                abilities = await self.get_available_abilities(lab)
+                for ability in abilities:
+                    if self.can_afford(lab(ability)):
+                        await self.do(lab(ability))
+               
+            if self.units(FORGE).ready.exists:
+                building = self.units(FORGE).ready.first
+                abilities = await self.get_available_abilities(building)
+                if PROTOSSSHIELDSLEVEL1 in abilities:
+                    if self.can_afford(PROTOSSSHIELDSLEVEL1) and building.noqueue:
+                        await self.do(building(PROTOSSSHIELDSLEVEL1))           
 #                if self.units(CYBERNETICSCORE).ready.exists:
 #                    building = self.units(CYBERNETICSCORE).ready.first
 #                    abilities = await self.get_available_abilities(building)
@@ -124,10 +154,12 @@ class SentdeBot(sc2.BotAI):
 #                    if self.can_afford(ROBOTICSFACILITY) and not self.already_pending(ROBOTICSFACILITY):
 #                        await self.build(ROBOTICSFACILITY, near=pylon)
 #    #test for robo facility ^
-    
+    """
+    Offensive Force Section
+    """
     async def build_offensive_force(self):
         for gw in self.units(GATEWAY).ready.noqueue:
-            if not self.units(ZEALOT).amount  > self.units(STALKER).amount  > self.units(CARRIER).amount and not self.units(STALKER).amount  > self.units(IMMORTAL).amount> self.units(CARRIER).amount: 
+            if not self.units(ZEALOT).amount  > self.units(STALKER).amount  > self.units(TEMPEST).amount and not self.units(VOIDRAY).amount  > self.units(IMMORTAL).amount> self.units(CARRIER).amount: 
 
                 if self.can_afford(STALKER) and self.supply_left > 0:
                     await self.do(gw.train(STALKER))
@@ -139,12 +171,14 @@ class SentdeBot(sc2.BotAI):
 #                    await self.do(gw.train(ZEALOT))
 
         for sg in self.units(STARGATE).ready.noqueue:
-            if self.can_afford(CARRIER) and self.supply_left > 0:
-                await self.do(sg.train(CARRIER))
+            if len(self.units(CARRIER)) < (self.getMinitues()*10):
+                if self.can_afford(CARRIER) and self.supply_left > 0:
+                    await self.do(sg.train(CARRIER))
                 
-#        for sg in self.units(STARGATE).ready.noqueue:
-#            if self.can_afford(TEMPEST) and self.supply_left > 0:
-#                await self.do(sg.train(TEMPEST))
+        for sg in self.units(STARGATE).ready.noqueue:
+            if len(self.units(TEMPEST)) < (self.getMinitues()*0.5):
+                if self.can_afford(TEMPEST) and self.supply_left > 0:
+                    await self.do(sg.train(TEMPEST))
         
         
 #        for sg in self.units(STARGATE).ready.noqueue:
@@ -171,8 +205,31 @@ class SentdeBot(sc2.BotAI):
             for battery in battery:
                 if not self.can_afford(SHIELDBATTERY) and len(self.units (SHIELDBATTERY)) < 4:
                  await self.build(SHIELDBATTERY, near = nexuses.first)
+  
+    async def research_tech(self, building, tech):
+        '''
+        Helper method for researching a tech at a specific building.
+        '''
+        self.chat_send("WROONG")
+        for lab in self.units(building).ready:
+            self.chat_send("Inside ready.exist")
+            abilities = await self.get_available_abilities(lab)
+            if tech in abilities and self.can_afford(tech):
+                self.chat_send("Inside can_afford")                
+                await self.do(lab(tech))
+    
+    async def research(self):
+        self.units(CYBERNETICSCORE).ready
+        self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1)
+        self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL2)
+        self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL3)
+    
+    
     
     def find_target(self, state):
+        '''
+        Helper method for finding a target in the attack method.
+        '''
         if len(self.known_enemy_units) > 0:
             return random.choice(self.known_enemy_units)
         elif len(self.known_enemy_structures) > 0:
@@ -196,7 +253,7 @@ class SentdeBot(sc2.BotAI):
 #                if len(self.known_enemy_units) > 0:
 #                    for s in self.units(UNIT).idle:
 #                        await self.do(s.attack(random.choice(self.known_enemy_units)))
-        unit_balance = { "Attack": 130, "Defend": 0}
+        unit_balance = { "Attack": 110, "Defend": 0}
 
         fighter_units = self.units.__sub__(self.units(PROBE)).not_structure()
 
