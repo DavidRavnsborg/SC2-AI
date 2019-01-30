@@ -8,6 +8,8 @@ from sc2.constants import *
 mapname = "(2)LostandFoundLE"
 
 class BlackBot(sc2.BotAI):
+    def __init__(self):
+        self.MAX_WORKERS = 50
     def select_target(self):
         target = self.known_enemy_structures
         if target.exists:
@@ -36,14 +38,19 @@ class BlackBot(sc2.BotAI):
 #            await self.expand_now()
 #        def getMinitues (self):
 #            return self.iteration / self.ITERATIONS_PER_MINUTE
-
+   
         
-        if iteration % 50 == 0 and self.units(SCV).amount > 21:
-            if  self.can_afford(COMMANDCENTER):
+        if iteration % 50 == 0 and self.units(SCV).amount > 16:
+            if self.can_afford(COMMANDCENTER) and self.units (COMMANDCENTER).amount < 2 :
                 await self.expand_now()
                 await self.distribute_workers()
+        if self.units (COMMANDCENTER).amount > 1 and self.can_afford(SCV) and self.workers.amount < 45 and cc.noqueue:
+            await self.do(cc.train(SCV))
+            await self.distribute_workers()
             
-        if iteration % 50 == 0 and self.units(MARINE).amount > 2:
+#        if self.units (COMMANDCENTER).amount < 1:
+#            await self.MAX)
+        if iteration % 50 == 0 and self.units(MARINE).amount > 4:
             target = self.select_target()
             forces = self.units(MARINE)
             if (iteration//50) % 10 == 0:
@@ -55,7 +62,11 @@ class BlackBot(sc2.BotAI):
 
         if self.can_afford(SCV) and self.workers.amount < 22 and cc.noqueue:
             await self.do(cc.train(SCV))
+            await self.distribute_workers()
+            
 
+#        if self.get_game_time() > 120:
+#            await self.scout()
 
         # if self.units(BARRACKS).exists and self.can_afford(MARINE):
         #     for br in self.units(BARRACKS):
@@ -77,20 +88,24 @@ class BlackBot(sc2.BotAI):
 #                if br.has_add_on and br.noqueue:
 #                    if not self.can_afford(MARINE):
 
-        elif self.supply_left < 3:
+        elif self.supply_left < 5:
             if self.can_afford(SUPPLYDEPOT):
                 await self.build(SUPPLYDEPOT, near=cc.position.towards(self.game_info.map_center, 2)) 
 
         if self.units(SUPPLYDEPOT).exists:
             if not self.units(BARRACKS).exists :
                 if self.can_afford(BARRACKS):
-                    await self.build(BARRACKS, near=cc.position.towards(self.game_info.map_center, 8))
-                    
-        if self.units(BARRACKS).ready.exists:
+                    await self.build(BARRACKS, near=cc.position.towards(self.game_info.map_center, 80).random_on_distance(8))
+#                    
+        if self.units(SUPPLYDEPOT).ready.exists:
 #                if self.can_afford(BARRACKS) and not self.already_pending(BARRACKS) and len(self.units (BARRACKS)) < 8:
-                if self.can_afford(BARRACKS) and len(self.units (BARRACKS)) < 4:
+                if self.can_afford(BARRACKS) and len(self.units (BARRACKS)) < 3:
                     await self.build(BARRACKS, near=cc.position.towards(self.game_info.map_center, 100).random_on_distance(8))
-      
+       
+        if self.units(BARRACKS).ready.exists:
+           if self.can_afford(BARRACKS) and len(self.units (COMMANDCENTER)) > 1 and len(self.units (BARRACKS)) < 6:
+               await self.build(BARRACKS, near=cc.position.towards(self.game_info.map_center, 80).random_on_distance(8))
+        
         if self.units(BARRACKS).ready.exists:
                 if self.can_afford(ENGINEERINGBAY) and not self.already_pending(ENGINEERINGBAY) and len(self.units (ENGINEERINGBAY))== 0:
                     await self.build(ENGINEERINGBAY, near=cc.position.towards(self.game_info.map_center, 100).random_on_distance(8))
@@ -110,6 +125,7 @@ class BlackBot(sc2.BotAI):
 #        if self.units(ENGINEERINGBAY).ready.exists and \
 #             self.can_afford(RESEARCH_TERRANINFANTRYARMORSLEVEL1):
 #                await self.do(lab(ENGINEERINGBAYRESEARCH_TERRANINFANTRYARMORSLEVEL1))
+                    
         if self.units(ENGINEERINGBAY).ready.exists:
             building = self.units(ENGINEERINGBAY).ready.first
             abilities = await self.get_available_abilities(building)
@@ -127,7 +143,7 @@ class BlackBot(sc2.BotAI):
                 
              
 
-        elif self.units(BARRACKS).exists and self.units(REFINERY).amount < 2:
+        elif self.units(BARRACKS).exists and self.units(REFINERY).amount < 4:
                 if self.can_afford(REFINERY):
                     vgs = self.state.vespene_geyser.closer_than(20.0, cc)
                     for vg in vgs:
@@ -162,6 +178,9 @@ class BlackBot(sc2.BotAI):
                     # await self.chat_send("Inside add_on_tag == 1")
                     await self.do(br.train(MARINE))
                     await self.do(br.train(MARINE))
+            if br.noqueue:
+                await self.do(br.train(MARINE))
+                await self.do(br.train(MARINE))
                 
         if self.units(STARPORT).ready.exists:
             if self.can_afford(FUSIONCORE) and not self.units(FUSIONCORE).exists:
