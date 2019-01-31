@@ -23,7 +23,10 @@ var/
 # Virtualenv
 SC2-AI/
 
-# SC2 workspace files
+# VS Code workspace files
+.vscode/
+
+# PyCharm workspace files
 .idea/
 
 # Training data
