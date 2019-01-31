@@ -1,29 +1,41 @@
 import sc2
-from sc2 import run_game, maps, Race, Difficulty, position, Result
+from sc2 import run_game, maps, Race, Difficulty, Result
 from sc2.player import Bot, Computer
+from sc2 import position
 from sc2.constants import NEXUS, PROBE, PYLON, ASSIMILATOR, GATEWAY, \
- CYBERNETICSCORE, STARGATE, VOIDRAY, OBSERVER, ROBOTICSFACILITY
+ CYBERNETICSCORE, STARGATE, VOIDRAY, SCV, DRONE, ROBOTICSFACILITY, OBSERVER
 import random
 import cv2
 import numpy as np
+import os
 import time
+import keras
 
+#os.environ["SC2PATH"] = '/starcraftstuff/StarCraftII/'
 HEADLESS = False
 
-
 class SentdeBotDL(sc2.BotAI):
-    def __init__(self):
+    def __init__(self, use_model=False):
         self.ITERATIONS_PER_MINUTE = 165
         self.MAX_WORKERS = 50
         self.do_something_after = 0
+        self.use_model = use_model
+
         self.train_data = []
+        #####
+        if self.use_model:
+            print("USING MODEL!")
+            self.model = keras.models.load_model("BasicCNN-30-epochs-0.0001-LR-4.2")
 
     def on_end(self, game_result):
         print('--- on_end called ---')
-        print(game_result)
+        print(game_result, self.use_model)
 
-        if game_result == Result.Victory:
-            np.save("train_data/{}.npy".format(str(int(time.time()))), np.array(self.train_data))
+        with open("gameout-random-vs-medium.txt","a") as f:
+            if self.use_model:
+                f.write("Model {}\n".format(game_result))
+            else:
+                f.write("Random {}\n".format(game_result))
 
     async def on_step(self, iteration):
         self.iteration = iteration
@@ -42,22 +54,32 @@ class SentdeBotDL(sc2.BotAI):
         x = enemy_start_location[0]
         y = enemy_start_location[1]
 
-        x += ((random.randrange(-20, 20))/100) * enemy_start_location[0]
-        y += ((random.randrange(-20, 20))/100) * enemy_start_location[1]
+        #  FIXED THIS
+        x += ((random.randrange(-20, 20))/100) * self.game_info.map_size[0]
+        y += ((random.randrange(-20, 20))/100) * self.game_info.map_size[1]
 
         if x < 0:
+            print("x below")
             x = 0
         if y < 0:
+            print("y below")
             y = 0
         if x > self.game_info.map_size[0]:
+            print("x above")
             x = self.game_info.map_size[0]
         if y > self.game_info.map_size[1]:
+            print("y above")
             y = self.game_info.map_size[1]
 
         go_to = position.Point2(position.Pointlike((x,y)))
+
         return go_to
 
     async def scout(self):
+        '''
+        ['__call__', '__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_game_data', '_proto', '_type_data', 'add_on_tag', 'alliance', 'assigned_harvesters', 'attack', 'build', 'build_progress', 'cloak', 'detect_range', 'distance_to', 'energy', 'facing', 'gather', 'has_add_on', 'has_buff', 'health', 'health_max', 'hold_position', 'ideal_harvesters', 'is_blip', 'is_burrowed', 'is_enemy', 'is_flying', 'is_idle', 'is_mine', 'is_mineral_field', 'is_powered', 'is_ready', 'is_selected', 'is_snapshot', 'is_structure', 'is_vespene_geyser', 'is_visible', 'mineral_contents', 'move', 'name', 'noqueue', 'orders', 'owner_id', 'position', 'radar_range', 'radius', 'return_resource', 'shield', 'shield_max', 'stop', 'tag', 'train', 'type_id', 'vespene_contents', 'warp_in']
+        '''
+
         if len(self.units(OBSERVER)) > 0:
             scout = self.units(OBSERVER)[0]
             if scout.is_idle:
@@ -72,6 +94,10 @@ class SentdeBotDL(sc2.BotAI):
                     await self.do(rf.train(OBSERVER))
 
     async def intel(self):
+
+        # for game_info: https://github.com/Dentosal/python-sc2/blob/master/sc2/game_info.py#L162
+        #print(self.game_info.map_size)
+        # flip around. It's y, x when you're dealing with an array.
         game_data = np.zeros((self.game_info.map_size[1], self.game_info.map_size[0], 3), np.uint8)
 
         # UNIT: [SIZE, (BGR COLOR)]
@@ -86,9 +112,7 @@ class SentdeBotDL(sc2.BotAI):
                      CYBERNETICSCORE: [3, (150, 150, 0)],
                      STARGATE: [5, (255, 0, 0)],
                      ROBOTICSFACILITY: [5, (215, 155, 0)],
-
-                     VOIDRAY: [3, (255, 100, 0)],
-                     #OBSERVER: [3, (255, 255, 255)],
+                     #VOIDRAY: [3, (255, 100, 0)],
                     }
 
         for unit_type in draw_dict:
@@ -96,7 +120,8 @@ class SentdeBotDL(sc2.BotAI):
                 pos = unit.position
                 cv2.circle(game_data, (int(pos[0]), int(pos[1])), draw_dict[unit_type][0], draw_dict[unit_type][1], -1)
 
-        main_base_names = ["nexus", "supplydepot", "hatchery"]
+        # NOT THE MOST IDEAL, BUT WHATEVER LOL
+        main_base_names = ["nexus", "commandcenter", "hatchery"]
         for enemy_building in self.known_enemy_structures:
             pos = enemy_building.position
             if enemy_building.name.lower() not in main_base_names:
@@ -122,6 +147,10 @@ class SentdeBotDL(sc2.BotAI):
         for obs in self.units(OBSERVER).ready:
             pos = obs.position
             cv2.circle(game_data, (int(pos[0]), int(pos[1])), 1, (255, 255, 255), -1)
+
+        for vr in self.units(VOIDRAY).ready:
+            pos = vr.position
+            cv2.circle(game_data, (int(pos[0]), int(pos[1])), 3, (255, 100, 0), -1)
 
         line_max = 50
         mineral_ratio = self.minerals / 1500
@@ -150,11 +179,15 @@ class SentdeBotDL(sc2.BotAI):
 
         # flip horizontally to make our final fix in visual representation:
         self.flipped = cv2.flip(game_data, 0)
+        resized = cv2.resize(self.flipped, dsize=None, fx=2, fy=2)
 
         if not HEADLESS:
-            resized = cv2.resize(self.flipped, dsize=None, fx=2, fy=2)
-            cv2.imshow('Intel', resized)
-            cv2.waitKey(1)
+            if self.use_model:
+                cv2.imshow('Model Intel', resized)
+                cv2.waitKey(1)
+            else:
+                cv2.imshow('Random Intel', resized)
+                cv2.waitKey(1)
 
     async def build_workers(self):
         if (len(self.units(NEXUS)) * 16) > len(self.units(PROBE)) and len(self.units(PROBE)) < self.MAX_WORKERS:
@@ -182,11 +215,13 @@ class SentdeBotDL(sc2.BotAI):
                     await self.do(worker.build(ASSIMILATOR, vaspene))
 
     async def expand(self):
-        if self.units(NEXUS).amount < (self.iteration / self.ITERATIONS_PER_MINUTE) and self.can_afford(NEXUS):
-            await self.expand_now()
+        try:
+            if self.units(NEXUS).amount < (self.iteration / self.ITERATIONS_PER_MINUTE)/2 and self.can_afford(NEXUS):
+                await self.expand_now()
+        except Exception as e:
+            print(str(e))
 
     async def offensive_force_buildings(self):
-        #print(self.iteration / self.ITERATIONS_PER_MINUTE)
         if self.units(PYLON).ready.exists:
             pylon = self.units(PYLON).ready.random
 
@@ -222,13 +257,30 @@ class SentdeBotDL(sc2.BotAI):
             return self.enemy_start_locations[0]
 
     async def attack(self):
+
         if len(self.units(VOIDRAY).idle) > 0:
-            choice = random.randrange(0, 4)
+
             target = False
             if self.iteration > self.do_something_after:
+                if self.use_model:
+                    prediction = self.model.predict([self.flipped.reshape([-1, 176, 200, 3])])
+                    choice = np.argmax(prediction[0])
+                    #print('prediction: ',choice)
+
+                    choice_dict = {0: "No Attack!",
+                                   1: "Attack close to our nexus!",
+                                   2: "Attack Enemy Structure!",
+                                   3: "Attack Eneemy Start!"}
+
+                    print("Choice #{}:{}".format(choice, choice_dict[choice]))
+
+                else:
+                    choice = random.randrange(0, 4)
+
+
                 if choice == 0:
                     # no attack
-                    wait = random.randrange(20, 165)
+                    wait = random.randrange(20,165)
                     self.do_something_after = self.iteration + wait
 
                 elif choice == 1:
@@ -248,13 +300,17 @@ class SentdeBotDL(sc2.BotAI):
                 if target:
                     for vr in self.units(VOIDRAY).idle:
                         await self.do(vr.attack(target))
+
                 y = np.zeros(4)
                 y[choice] = 1
-                print(y)
+                #print(y)
                 self.train_data.append([y,self.flipped])
 
+            #print(len(self.train_data))
+
 if __name__ == "__main__":
-    run_game(maps.get("(2)LostandFoundLE"), [
-        Bot(Race.Protoss, SentdeBot()),
-        Computer(Race.Terran, Difficulty.Easy)
+    for i in range(100):
+        run_game(maps.get("(2)LostandFoundLE"), [
+            Bot(Race.Protoss, SentdeBotDL(use_model=True)),
+            Computer(Race.Protoss, Difficulty.Medium),
         ], realtime=False)
