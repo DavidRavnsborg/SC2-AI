@@ -1,0 +1,352 @@
+import sc2
+from sc2 import run_game, maps, Race, Difficulty
+from sc2.player import Bot, Computer
+from sc2.constants import *
+import random
+
+mapname = "(2)LostandFoundLE"
+#mapname = input ()
+
+class BaseBot(sc2.BotAI):
+
+    class Order():
+        '''
+        Basic struct for holding unit type and time in each entry of build
+        order list.
+        '''
+        def __init__(self, unit, time = 0):
+            self.unit = unit
+            self.time = time
+    
+    def __init__(self, build_order = None):
+        self.ITERATIONS_PER_MINUTE = 165
+        
+        if build_order != None:
+            self.chat_send("Adding custom build orders to BaseBot: {0}".format(build_order))
+            self.build_order = build_order
+        else:
+            self.build_order = {}
+
+    async def on_step(self, iteration):# what to do every step
+        self.iteration = iteration   
+        await self.distribute_workers()  # in sc2/bot_ai.py
+        await self.build_units()
+#         await self.build_workers()  # workers bc obviously
+#         await self.build_pylons()  # pylons are protoss supply buildings
+#         await self.expand()   # expand to a new resource area.
+#         await self.build_assimilator()  # getting gas
+#         await self.research()
+#         await self.offensive_force_buildings()
+#         await self.build_offensive_force()
+#         await self.attack()
+#         await self.build_defense()
+    
+    async def build_units(self):
+        
+        async def build_building_near_nexus_away_from_minerals(building_type):
+            nexuses = self.units(NEXUS).ready
+            if nexuses.exists: 
+                nexus = nexuses.random
+                if self.can_afford(building_type):
+                    minerals = self.state.mineral_field.closer_than(9.0, nexus)
+                    position_offset = nexus.position - minerals.random.position
+                    building_position = nexus.position - position_offset
+                    await self.build(building_type, near=building_position, placement_step=6)
+                    del self.build_order[0]
+                    await self.chat_send("Building {0}".format(building_type))
+                        
+        async def build_building_near_pylon(building_type):
+            pylons = self.units(PYLON).ready
+            if pylons.exists: 
+                pylon = pylons.random
+                if self.can_afford(building_type):
+                    await self.build(building_type, near=pylon.position, placement_step=6)
+                    del self.build_order[0]
+                    await self.chat_send("Building {0}".format(building_type))
+        
+        if len(self.build_order) > 0:
+            order = self.build_order[0]
+#            await self.chat_send("Retrieving order for {0}".format(order.unit))
+            
+            if order.unit == PYLON:
+                await build_building_near_nexus_away_from_minerals(PYLON)
+            elif order.unit == GATEWAY:
+                await build_building_near_pylon(GATEWAY)
+        
+#    
+#    async def build_workers(self):
+#        # nexus = command center
+#       if (len(self.units(NEXUS)) * 16) > len(self.units(PROBE)) and len(self.units(PROBE)) < self.MAX_WORKERS:
+#        for nexus in self.units(NEXUS).ready.noqueue:
+#            if self.can_afford(PROBE):
+#                await self.do(nexus.train(PROBE))
+#                
+#    async def build_pylons(self):
+#        if self.supply_left < 7 and not self.already_pending(PYLON):
+#            nexuses = self.units(NEXUS).ready
+#            if nexuses.exists:
+#                if self.can_afford(PYLON):
+#                    await self.build(PYLON, near=nexuses.first)
+#   
+#    async def expand(self):
+#        if self.units(NEXUS).amount < min(14, 0.6*self.get_minutes()) and self.can_afford(NEXUS):
+#            await self.expand_now()
+#            
+#    async def build_assimilator(self):
+#        for nexus in self.units(NEXUS).ready:
+#            vaspenes = self.state.vespene_geyser.closer_than(9.0, nexus)
+#            for vaspene in vaspenes:
+#                if not self.can_afford(ASSIMILATOR):
+#                    break
+#                worker = self.select_build_worker(vaspene.position)
+#                if worker is None:
+#                    break
+#                if not self.units(ASSIMILATOR).closer_than(1.0, vaspene).exists:
+#                    await self.do(worker.build(ASSIMILATOR, vaspene))
+#    
+#    async def offensive_force_buildings(self):
+#        if self.units(PYLON).ready.exists:
+#            pylon = self.units(PYLON).ready.random
+#
+#            if self.units(GATEWAY).ready.exists and not self.units(CYBERNETICSCORE):
+#                if self.can_afford(CYBERNETICSCORE) and not self.already_pending(CYBERNETICSCORE):
+#                    await self.build(CYBERNETICSCORE, near=pylon)
+#
+#            elif len(self.units(GATEWAY)) < (self.get_minutes()/4):
+#                if self.can_afford(GATEWAY) and not self.already_pending(GATEWAY):
+#                    await self.build(GATEWAY, near=pylon)
+#                    
+#            if self.units(CYBERNETICSCORE).ready.exists:
+#                if self.can_afford(FORGE) and len(self.units(FORGE)) == 0:
+#                    await self.build(FORGE, near=pylon)
+#                    
+#            if self.units(CYBERNETICSCORE).ready.exists:
+#                if self.can_afford(STARGATE) and not self.already_pending(STARGATE) and len(self.units (STARGATE))== 0:
+#                    await self.build(STARGATE, near=pylon)
+#
+#            if self.units(STARGATE).ready.exists:
+#                if self.can_afford(FLEETBEACON) and not self.already_pending(FLEETBEACON) and len(self.units (FLEETBEACON))== 0:
+#                    await self.build(FLEETBEACON, near=pylon)
+#                        
+#            if self.units(STARGATE).ready.exists:
+#                if self.can_afford(STARGATE) and not self.already_pending(STARGATE) and len(self.units (NEXUS)) > 1:
+#                    if not len(self.units(STARGATE))>=4:				    
+#                        await self.build(STARGATE, near=pylon)
+#                        
+##            if self.units(CYBERNETICSCORE).ready.exists:
+##                if self.can_afford(STARGATE) and not self.already_pending(STARGATE)and len(self.units (NEXUS))  > len(self.units (STARGATE))/3 :
+##                    if not len(self.units(STARGATE )) >=4: 
+##                        await self.build(STARGATE, near=pylon)
+##
+##            if self.units(CYBERNETICSCORE).ready.exists:
+###                if len(self.units(STARGATE)) < (self.get_minutes()/3):
+###                    if self.can_afford(STARGATE) and not self.already_pending(STARGATE):
+###                        await self.build(STARGATE, near=pylon)
+#                        
+#            if self.units(CARRIER).ready.exists:
+#                building = self.units(FORGE).ready.first
+#                abilities = await self.get_available_abilities(building)
+#                if PROTOSSSHIELDSLEVEL1 in abilities:
+#                    if self.can_afford(UPGRADE_PROTOSSSHIELDSLEVEL1) and building.noqueue:
+#                        await self.do(building(UPGRADE_PROTOSSSHIELDSLEVEL1))
+###             
+#            if self.units(FLEETBEACON).ready.exists:  
+#                if self.can_afford(TWILIGHTCOUNCIL) and not self.already_pending(TWILIGHTCOUNCIL)and len(self.units (TWILIGHTCOUNCIL))== 0:
+#                    await self.build(TWILIGHTCOUNCIL, near=pylon)
+#                                
+#                                
+##                for lab in self.units(CYBERNETICSCORE).ready:
+##                    abilities = await self.get_available_abilities(lab)
+##                    if RESEARCH_WARPGATE in abilities and \
+##                       self.can_afford(RESEARCH_WARPGATE):
+##                       await self.do(lab(RESEARCH_WARPGATE))
+#
+## DELETE THIS IS RESEARCH WORKS               
+##                if self.units(CYBERNETICSCORE).ready.exists:
+##                    abilities = await self.get_available_abilities(lab)
+##                    if CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1 in abilities and \
+##                       self.can_afford(CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1):
+##                       await self.do(lab(CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1))
+#            if self.units(CARRIER).ready.exists:          
+#                for lab in self.units(CYBERNETICSCORE).ready.noqueue:
+#                    abilities = await self.get_available_abilities(lab)
+#                    for ability in abilities:
+#                        if self.can_afford(lab(ability)):
+#                            await self.do(lab(ability))
+#            
+#            if self.units(FLEETBEACON).ready.exists:
+#                for lab in self.units(FORGE).ready.noqueue:
+#                    abilities = await self.get_available_abilities(lab)
+#                    for ability in abilities:
+#                        if self.can_afford(lab(ability)):
+#                            await self.do(lab(ability))
+#               
+#            if self.units(FORGE).ready.exists:
+#                building = self.units(FORGE).ready.first
+#                abilities = await self.get_available_abilities(building)
+#                if PROTOSSSHIELDSLEVEL1 in abilities:
+#                    if self.can_afford(PROTOSSSHIELDSLEVEL1) and building.noqueue:
+#                        await self.do(building(PROTOSSSHIELDSLEVEL1))           
+##                if self.units(CYBERNETICSCORE).ready.exists:
+##                    building = self.units(CYBERNETICSCORE).ready.first
+##                    abilities = await self.get_available_abilities(building)
+##                    if WARPGATE in abilities:
+##                        if self.can_afford(WARPGATERESEARCH) and building.noqueue:
+##                            await self.do(building(WARPGATERESEARCH))
+#                
+##                
+##                if self.can_afford(TEMPLARARCHIVE) and not self.already_pending(TEMPLARARCHIVE)and len(self.units (TEMPLARARCHIVE))== 0:
+##                    await self.build(TEMPLARARCHIVE, near=pylon)
+##                
+##                if self.units(CYBERNETICSCORE).ready.exists:
+##                    if self.can_afford(WARPGATERESEARCH) and not self.already_pending(WARPGATERESEARCH) :
+##                        await self.build(WARPGATERESEARCH)
+##                        
+##                if self.units(TEMPLARARCHIVE).ready.exists:
+##                    if self.can_afford(PSISTORMTECH) and not self.already_pending(PSISTORMTECH) :
+##                        await self.build(PSISTORMTECH)
+##                        
+#          
+#               
+##                #test for robo facility v#
+##            elif len(self.units(ROBOTICSFACILITY)) < (self.get_minutes()/5):
+##                    if self.can_afford(ROBOTICSFACILITY) and not self.already_pending(ROBOTICSFACILITY):
+##                        await self.build(ROBOTICSFACILITY, near=pylon)
+##    #test for robo facility ^
+#    """
+#    Offensive Force Section
+#    """
+#    async def build_offensive_force(self):
+#        for gw in self.units(GATEWAY).ready.noqueue:
+#            if not self.units(ZEALOT).amount  > self.units(STALKER).amount  > self.units(TEMPEST).amount and not self.units(VOIDRAY).amount  > self.units(IMMORTAL).amount> self.units(CARRIER).amount: 
+#
+#            
+#                if self.can_afford(ZEALOT) and len(self.units(ZEALOT)) < self.MAX_ZEALOTS:
+#                    await self.do(gw.train(ZEALOT))
+#                    
+#                if self.can_afford(STALKER) and len(self.units(STALKER)) < self.MAX_STALKERS:
+#                    await self.do(gw.train(STALKER)) 
+#                
+#                 
+#                    
+##                if self.can_afford(ADEPT) and self.supply_left > 0:
+##                    await self.do(gw.train(ADEPT))
+#                    
+##                if self.can_afford(ZEALOT) and self.supply_left > 0:
+##                    await self.do(gw.train(ZEALOT))
+#
+#        for sg in self.units(STARGATE).ready.noqueue:
+#            if self.can_afford(CARRIER) and self.supply_left > 0:
+#                    await self.do(sg.train(CARRIER))
+#       
+##        for sg in self.units(STARGATE).ready.noqueue:
+##            if len(self.units(CARRIER)) < (self.get_minutes()*100):
+##                if self.can_afford(CARRIER) and self.supply_left > 0:
+##                    await self.do(sg.train(CARRIER))
+#         
+#        for sg in self.units(STARGATE).ready.noqueue:
+#            if len(self.units(TEMPEST)) < (self.get_minutes()*0.25):
+#                if self.can_afford(TEMPEST) and self.supply_left > 0:
+#                    await self.do(sg.train(TEMPEST))
+#        
+#        
+#        for sg in self.units(STARGATE).ready.noqueue:
+#            if self.can_afford(VOIDRAY) and self.supply_left > 0:
+#                await self.do(sg.train(VOIDRAY))
+#                
+#        #IMMORTAL BUILD TEST v
+#        for rf in self.units(ROBOTICSFACILITY).ready.noqueue:
+#            if self.can_afford(IMMORTAL) and self.supply_left > 0:
+#                await self.do(rf.train(IMMORTAL))
+#    #IMORTAL BUILD TEST ^
+#    
+#    async def build_defense(self):
+#        nexuses = self.units(NEXUS)
+#        if len(nexuses) >= 3 and self.can_afford(PHOTONCANNON) and len(self.units (PHOTONCANNON)) < 2: 
+#            await self.build(PHOTONCANNON, near = nexuses.first)
+#            
+##        if len(nexuses) >= 3 and self.can_afford(SHIELDBATTERY) and len(self.units (SHIELDBATTERY)) < 4: 
+##            await self.build(SHIELDBATTERY, near = nexuses.first)
+#            
+#    async def build_battery(self):
+#        for nexus in self.units(NEXUS).ready:
+#            battery = self.state.nexus.Further_than(9.0, nexus)
+#            for battery in battery:
+#                if not self.can_afford(SHIELDBATTERY) and len(self.units (SHIELDBATTERY)) < 4:
+#                 await self.build(SHIELDBATTERY, near = nexuses.first)
+#  
+#    async def research_tech(self, building, tech):
+#        '''
+#        Helper method for researching a tech at a specific building.
+#        '''
+#        for lab in self.units(building).ready.noqueue:
+#            # if lab.ready:
+#            abilities = await self.get_available_abilities(lab)
+#            if tech in abilities and self.can_afford(tech):
+#                await self.chat_send("Upgrading ability {0}".format(tech.name))
+#                await self.do(lab(tech))
+#    
+#    async def research(self):
+#        await self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL1)
+#        await self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL2)
+#        await self.research_tech(CYBERNETICSCORE, CYBERNETICSCORERESEARCH_PROTOSSAIRWEAPONSLEVEL3)
+#    
+#    
+#    
+#    def find_target(self, state):
+#        '''
+#        Helper method for finding a target in the attack method.
+#        '''
+#        if len(self.known_enemy_units) > 0:
+#            return random.choice(self.known_enemy_units)
+#        elif len(self.known_enemy_structures) > 0:
+#            return random.choice(self.known_enemy_structures)
+#        else:
+#            return self.enemy_start_locations[0]
+#   
+#    async def attack(self):
+#        # {UNIT: [n to fight, n to defend]}
+##        aggressive_units = {STALKER: [15, 5],
+##                            VOIDRAY: [8, 8],
+##                            IMMORTAL: [8, 8],
+##                            ZEALOT: [8,3]}
+##
+##        for UNIT in aggressive_units:
+##            if self.units(UNIT).amount > aggressive_units[UNIT][0] and self.units(UNIT).amount > aggressive_units[UNIT][1]:
+##                for s in self.units(UNIT).idle:
+##                    await self.do(s.attack(self.find_target(self.state)))
+##
+##            elif self.units(UNIT).amount > aggressive_units[UNIT][1]:
+##                if len(self.known_enemy_units) > 0:
+##                    for s in self.units(UNIT).idle:
+##                        await self.do(s.attack(random.choice(self.known_enemy_units)))
+#        unit_balance = { "Attack": 100, "Defend": 100}
+#
+#        fighter_units = self.units.__sub__(self.units(PROBE)).not_structure()
+#
+#        if fighter_units.amount > unit_balance["Attack"]:
+#            print("Fighter unit count {0}".format(fighter_units.amount))
+#            for s in fighter_units:
+#                await self.do(s.attack(self.find_target(self.state)))
+#
+#        elif fighter_units.amount > unit_balance["Defend"]:
+#            if len(self.known_enemy_units) > 0:
+#                for s in fighter_units:
+#                    await self.do(s.attack(random.choice(self.known_enemy_units)))
+                    
+    def get_minutes (self):
+        return self.iteration / self.ITERATIONS_PER_MINUTE
+        
+        
+    
+    
+
+
+
+
+build_order_list = [BaseBot.Order(PYLON), BaseBot.Order(GATEWAY)]
+run_game(maps.get(mapname), [
+    Bot(Race.Protoss, BaseBot(build_order_list)),
+    Computer(Race.Terran, Difficulty.VeryHard)
+], realtime=False)
+    
